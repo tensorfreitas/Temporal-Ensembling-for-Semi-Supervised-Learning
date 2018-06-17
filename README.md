@@ -87,7 +87,7 @@ Notice that the final weight in each epoch corresponds to ![w_t_final], where ![
 The train used Adam, and the learning rate also suffers a rampup in the first 80 epochs and a rampdown in the last 50 epochs (the rampdown is simular to the rampup Gaussian function, but has a scaling constant of 12.5 instead of 5: 
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/10371630/41509468-0d338f00-724c-11e8-9d67-c5b1b79de0e0.png"/>
+  <img src="https://user-images.githubusercontent.com/10371630/41509597-9a84fa54-724e-11e8-9568-796a55d436ec.png"/>
 </p>
 
 Adam's ![beta1] also was annealed using this functon but instead of tending to 0 it converges to 0.5 on the last 50 epochs. 
