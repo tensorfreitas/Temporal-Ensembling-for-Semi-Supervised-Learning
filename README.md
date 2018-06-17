@@ -12,7 +12,7 @@ Semi-Supervised Learning algorithms try improving traditional supervised learnin
 
 The paper propose two implementations of self-ensembling, i.e. forming different ensemble predictions in the training process under different conditions of regularization (dropout) and augmentations.
 
-The two different methods are $\Pi$-model and temporal ensembling. Let's dive a little bit into each one of them. 
+The two different methods are ![Pi]-Model and temporal ensembling. Let's dive a little bit into each one of them. 
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/10371630/41501166-caf8a93c-7196-11e8-9072-19dd6968c8e6.png" alt="temporal-ensembling"/>
@@ -54,6 +54,44 @@ The disadvantages are the following:
 - The predictions need to be stored across epochs.
 - A new hyperparameter ![alpha] is introduced.
 
+### Training details
+
+To test the two types of ensembling, the authors used a CNN with the following architecture:
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/10371630/41508999-d80054be-7244-11e8-8191-899331ddde52.png"/>
+</p>
+
+The datasets tested were CIFAR-10, CIFAR-100 and SVNH. I will focus on the latter since currently I only tested on this dataset. 
+
+**SVNH Dataset**
+
+The Street View House Numbers (SVNH) dataset includes images with digits and numbers in natural scene images. The authors used the MNIST-like 32x32 images centered around a single character, trying to classify the center digit. It has 73257 digits for training, 26032 digits for testing, and 531131 extra digits (not used currently). 
+
+<p align="center">
+  <img src="http://ufldl.stanford.edu/housenumbers/32x32eg.png"/>
+</p>
+
+**Unsupervised Weight Function**
+
+As described before, both algorithms use a time-dependent weighting function ![w_t]. I the paper the authors use a a Gaussian ramp-up curve that grows from 0 to 1 in 80 epochs, and remains constant for all training:
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/10371630/41509469-10333a66-724c-11e8-9316-1ab38d926a60.png"/>
+</p>
+
+The function that describes this rampup is: ![rampup]
+
+Notice that the final weight in each epoch corresponds to ![w_t_final], where ![m] in the number of labeled samples used, N![n] is the number of total training samples and ![w_max] is a constant that varies across the problem and dataset. 
+
+The train used Adam, and the learning rate also suffers a rampup in the first 80 epochs and a rampdown in the last 50 epochs (the rampdown is simular to the rampup Gaussian function, but has a scaling constant of 12.5 instead of 5: 
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/10371630/41509468-0d338f00-724c-11e8-9d67-c5b1b79de0e0.png"/>
+</p>
+
+Adam's ![beta1] also was annealed using this functon but instead of tending to 0 it converges to 0.5 on the last 50 epochs. 
+
 (UNDER WORK)
 
 ## References
@@ -79,3 +117,10 @@ I would like to give credit to some repositories that I found while reading the 
 [w_t]: http://chart.apis.google.com/chart?cht=tx&chl=w(t)
 [alpha]: http://chart.apis.google.com/chart?cht=tx&chl=\alpha
 [correction_form]: http://chart.apis.google.com/chart?cht=tx&chl=(1-\alpha^{t})
+[w_t_final]: http://chart.apis.google.com/chart?cht=tx&chl=w(t)*w_{max}*\frac{M}{N}
+[m]: http://chart.apis.google.com/chart?cht=tx&chl=M
+[n]: http://chart.apis.google.com/chart?cht=tx&chl=N
+[w_max]: http://chart.apis.google.com/chart?cht=tx&chl=w_{max}
+[rampup]: http://chart.apis.google.com/chart?cht=tx&chl=w(t)=exp(-5(1-(\frac{epoch}{80})^2)
+[beta1]: http://chart.apis.google.com/chart?cht=tx&chl=\beta_1
+
