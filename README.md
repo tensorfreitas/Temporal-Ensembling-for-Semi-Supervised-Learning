@@ -84,15 +84,27 @@ The function that describes this rampup is: ![rampup]
 
 Notice that the final weight in each epoch corresponds to ![w_t_final], where ![m] in the number of labeled samples used, N![n] is the number of total training samples and ![w_max] is a constant that varies across the problem and dataset. 
 
-The train used Adam, and the learning rate also suffers a rampup in the first 80 epochs and a rampdown in the last 50 epochs (the rampdown is simular to the rampup Gaussian function, but has a scaling constant of 12.5 instead of 5: 
+The train used Adam, and the learning rate also suffers a rampup in the first 80 epochs and a rampdown in the last 50 epochs (the rampdown is similar to the rampup Gaussian function, but has a scaling constant of 12.5 instead of 5: 
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/10371630/41509597-9a84fa54-724e-11e8-9568-796a55d436ec.png"/>
 </p>
 
-Adam's ![beta1] also was annealed using this functon but instead of tending to 0 it converges to 0.5 on the last 50 epochs. 
+The learning rate in each epoch corresponds to the multiplication of this temporal weight function by a max learning rate (hyperparameter) Adam's ![beta1] also was annealed using this function but instead of tending to 0 it converges to 0.5 on the last 50 epochs. 
 
-(UNDER WORK)
+The training hyperparameters described in the paper are different in both algorithms and for the different datasets:
+- Weight and Batch normalization with momentum of 0.999 was used in all layers.
+- The max learning rate was defined as 0.003 except for temporal ensembling in SVNH dataset, where this parameter was set to 0.001.
+- the value for ![w_max] also varied: in pi-model it was set for 100 for SVNH and CIFAR-10 and 300 for CIFAR-100, while for temporal ensembling it was set to 30. 
+- The trainig was done for 300 epochs with batch size of 100.
+- Data augmentation included random flips (except in SVNH) and random translations with a max translation of +/- 2 pixels. 
+- In CIFAR datasets ZCA normalization was used and in SVNH zero mean and unit variance normalization was used. 
+- Adam was used and in SVNH the ![beta2] was set to 0.99 instead of 0.999, since it seemed to avoid gradient explosion. 
+
+There are some differences in this repository regarding the paper:
+- The authors claim to be completely randomize the batches, which means that can be consecutive batches without labeled inputs. In this implementation I set the number of labeled and unlabeled samples to be equal (50+50). 
+- The authors tested in CIFAR-10 and CIFAR-100 and with extra support unlabeled dataset for SVNH and CIFAR. Currently the implementation only includes SVNH training.
+- Training using with label corruption was tested in the paper, which is not tested in this repository.
 
 ## References
 - Laine, Samuli, and Timo Aila. "Temporal ensembling for semi-supervised learning." arXiv preprint arXiv:1610.02242 (2016).
@@ -123,4 +135,4 @@ I would like to give credit to some repositories that I found while reading the 
 [w_max]: http://chart.apis.google.com/chart?cht=tx&chl=w_{max}
 [rampup]: http://chart.apis.google.com/chart?cht=tx&chl=w(t)=exp(-5(1-(\frac{epoch}{80})^2)
 [beta1]: http://chart.apis.google.com/chart?cht=tx&chl=\beta_1
-
+[beta2]: http://chart.apis.google.com/chart?cht=tx&chl=\beta_2
