@@ -92,31 +92,61 @@ The train used Adam, and the learning rate also suffers a rampup in the first 80
 
 The learning rate in each epoch corresponds to the multiplication of this temporal weight function by a max learning rate (hyperparameter) Adam's ![beta1] also was annealed using this function but instead of tending to 0 it converges to 0.5 on the last 50 epochs. 
 
+**Training parameters**
+
 The training hyperparameters described in the paper are different in both algorithms and for the different datasets:
-- Weight and Batch normalization with momentum of 0.999 was used in all layers.
+- Weight and mean only batch normalization with momentum of 0.999 was used in all layers.
 - The max learning rate was defined as 0.003 except for temporal ensembling in SVNH dataset, where this parameter was set to 0.001.
 - the value for ![w_max] also varied: in pi-model it was set for 100 for SVNH and CIFAR-10 and 300 for CIFAR-100, while for temporal ensembling it was set to 30. 
-- The trainig was done for 300 epochs with batch size of 100.
+- The training was done for 300 epochs with batch size of 100.
 - Data augmentation included random flips (except in SVNH) and random translations with a max translation of +/- 2 pixels. 
 - In CIFAR datasets ZCA normalization was used and in SVNH zero mean and unit variance normalization was used. 
 - Adam was used and in SVNH the ![beta2] was set to 0.99 instead of 0.999, since it seemed to avoid gradient explosion. 
 
 There are some differences in this repository regarding the paper:
-- The authors claim to be completely randomize the batches, which means that can be consecutive batches without labeled inputs. In this implementation I set the number of labeled and unlabeled samples to be equal (50+50). 
+- The authors claim to completely randomize the batches, which means that can be consecutive batches without labeled inputs. In this implementation I set the number of labeled and unlabeled samples to be equal (50+50). 
 - The authors tested in CIFAR-10 and CIFAR-100 and with extra support unlabeled dataset for SVNH and CIFAR. Currently the implementation only includes SVNH training.
 - Training using with label corruption was tested in the paper, which is not tested in this repository.
+- No information is given in the paper on the validation set. In the implementation by default 1000 samples (100 per class) are used as labeled samples, 200 (20 per class) are used for validation. This is way more close to real-world scenarios and was done also in Avital et al. paper "Realistic Evaluation of Deep Semi-Supervised Learning Algorithms." The remaining training set samples are used as unlabeled samples.
+- A full epoch is considered when all labeled samples are passed by the network (this means that in one epoch not all unlabeled samples are passed in the network). 
+
+**Code Details** 
+
+_train_pi_model.py_ includes the main function for training the ![Pi]-Model on SVNH dataset. You can edit some variables described before in the beginning of the main function. The default parameters are the described in the paper:
+
+```python
+# Editable variables
+num_labeled_samples = 1000
+num_validation_samples = 200
+batch_size = 50
+epochs = 300
+max_learning_rate = 0.001
+initial_beta1 = 0.9
+final_beta1 = 0.5
+checkpoint_directory = './checkpoints/PiModel'
+```
+_svnh_loader.py_ and _tfrecord_loader.py_ have helper classes for downloading the dataset and save them in tfrecords in order to be loaded as _tf.data.TFRecordDataset_. 
+
+_pi_model.py_ is where the model is defined as _tf.keras.Model_ and where some training functions are defined like rampup and rampdown functions, the loss and gradients functions. 
+
+In the folder _weight_norm_layers_ there are some edited tensorflow.layers wrappers for allowing weight normalization and mean-only batch normalization in _Conv2D_ and _Dense_ layers as used in the paper.
+
+Note: The Code for temporal ensembling training is still not in the repo, but I will add it in the next few days. 
 
 ## References
 - Laine, Samuli, and Timo Aila. "Temporal ensembling for semi-supervised learning." arXiv preprint arXiv:1610.02242 (2016).
 - Oliver, Avital, et al. "Realistic Evaluation of Deep Semi-Supervised Learning Algorithms." arXiv preprint arXiv:1804.09170 (2018).
+- Salimans, Tim, and Diederik P. Kingma. "Weight normalization: A simple reparameterization to accelerate training of deep neural networks." Advances in Neural Information Processing Systems. 2016.
 
 ## Credits
 
 I would like to give credit to some repositories that I found while reading the paper that helped me in my implementation.
 
-- [Original Implementation in Lasagne](https://github.com/smlaine2/tempens)
+- [Author's Original Implementation in Lasagne](https://github.com/smlaine2/tempens)
 - [NVIDIA’s Π Model from “Temporal Ensembling for Semi-Supervised Learning” (ICLR 2017) with TensorFlow.](https://github.com/geosada/PI)
 - [John Farret blog post with Pytorch Code on MNIST dataset](https://ferretj.github.io/ml/2018/01/22/temporal-ensembling.html)
+- [OpenAI original weightnorm implementation](https://github.com/openai/weightnorm)
+- [Weight Norm Tensorflow Issue](https://github.com/tensorflow/tensorflow/issues/10125)
 
 [Pi]: http://chart.apis.google.com/chart?cht=tx&chl=\Pi
 [zi]: http://chart.apis.google.com/chart?cht=tx&chl=z_i
