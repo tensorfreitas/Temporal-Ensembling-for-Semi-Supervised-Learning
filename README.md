@@ -145,7 +145,7 @@ I would like to give credit to some repositories that I found while reading the 
 - [Author's Original Implementation in Lasagne](https://github.com/smlaine2/tempens)
 - [NVIDIA’s Π Model from “Temporal Ensembling for Semi-Supervised Learning” (ICLR 2017) with TensorFlow.](https://github.com/geosada/PI)
 - [John Farret blog post with Pytorch Code on MNIST dataset](https://ferretj.github.io/ml/2018/01/22/temporal-ensembling.html)
-- [OpenAI original weightnorm implementation](https://github.com/openai/weightnorm)
+- [OpenAI original weight norm implementation](https://github.com/openai/weightnorm)
 - [Weight Norm Tensorflow Issue](https://github.com/tensorflow/tensorflow/issues/10125)
 
 [Pi]: http://chart.apis.google.com/chart?cht=tx&chl=\Pi
