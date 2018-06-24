@@ -115,7 +115,7 @@ def main():
                                         optimizer_step=tf.train.get_or_create_global_step())
             checkpoint.save(file_prefix=checkpoint_directory)
 
-    print('\nTrain Ended!\n')
+    print('\nTrain Ended! Best Validation accuracy = {}\n'.format(best_val_accuracy))
     
     # Load the best model
     root = tfe.Checkpoint(optimizer=optimizer,
