@@ -124,12 +124,15 @@ max_learning_rate = 0.001
 initial_beta1 = 0.9
 final_beta1 = 0.5
 checkpoint_directory = './checkpoints/PiModel'
+tensorboard_logs_directory = './logs/PiModel'
 ```
 _svnh_loader.py_ and _tfrecord_loader.py_ have helper classes for downloading the dataset and save them in tfrecords in order to be loaded as _tf.data.TFRecordDataset_. 
 
 _pi_model.py_ is where the model is defined as _tf.keras.Model_ and where some training functions are defined like rampup and rampdown functions, the loss and gradients functions. 
 
 In the folder _weight_norm_layers_ there are some edited tensorflow.layers wrappers for allowing weight normalization and mean-only batch normalization in _Conv2D_ and _Dense_ layers as used in the paper.
+
+The code also saves tensorboard logs, plotting loss curves, mean accuracies and the evolution of the unsupervised learning weight and learning rates.
 
 Note: The Code for temporal ensembling training is still not in the repo, but I will add it in the next few days. 
 

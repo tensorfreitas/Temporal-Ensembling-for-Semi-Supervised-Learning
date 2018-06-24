@@ -10,11 +10,12 @@ from tfrecord_loader import TfrecordLoader
 
 from pi_model import PiModel, pi_model_loss, pi_model_gradients, ramp_up_function, ramp_down_function
 
+
 def main():
     # Constants variables
     NUM_TRAIN_SAMPLES = 73257
     NUM_TEST_SAMPLES = 26032
-    
+
     # Editable variables
     num_labeled_samples = 1000
     num_validation_samples = 200
@@ -24,6 +25,7 @@ def main():
     initial_beta1 = 0.9
     final_beta1 = 0.5
     checkpoint_directory = './checkpoints/PiModel'
+    tensorboard_logs_directory = './logs/PiModel'
 
     # Assign it as tfe.variable since we will change it across epochs
     learning_rate = tfe.Variable(max_learning_rate)
@@ -47,9 +49,10 @@ def main():
     max_unsupervised_weight = 100 * num_labeled_samples / \
         (NUM_TRAIN_SAMPLES - num_validation_samples)
 
-    train_loss_results = []
-    train_accuracy_results = []
     best_val_accuracy = 0
+    global_step = tf.train.get_or_create_global_step()
+    writer = tf.contrib.summary.create_file_writer(tensorboard_logs_directory)
+    writer.set_as_default()
 
     for epoch in range(epochs):
 
@@ -77,7 +80,7 @@ def main():
             loss_val, grads = pi_model_gradients(X_labeled_train, y_labeled_train, X_unlabeled_train,
                                                  model, unsupervised_weight)
             optimizer.apply_gradients(zip(grads, model.variables),
-                                      global_step=tf.train.get_or_create_global_step())
+                                      global_step=global_step)
 
             epoch_loss_avg(loss_val)
             epoch_accuracy(
@@ -92,35 +95,47 @@ def main():
                     epoch_accuracy_val(
                         tf.argmax(y_val_predictions, 1), tf.argmax(y_val, 1))
 
-        # end epoch
-        train_loss_results.append(epoch_loss_avg.result())
-        train_accuracy_results.append(epoch_accuracy.result())
-
-        print("Epoch {:03d}/{:03d}: Train Loss: {:9.7f}, Train Accuracy: {:.6%}, Validation Loss: {:9.7f}, "
-              "Validation Accuracy: {:.6%}, lr={:.9f}, unsupervised weight={:5.3f}, beta1={:.9f}".format(epoch+1,
-                                                                                                         epochs,
-                                                                                                         epoch_loss_avg.result(),
-                                                                                                         epoch_accuracy.result(),
-                                                                                                         epoch_loss_avg_val.result(),
-                                                                                                         epoch_accuracy_val.result(),
-                                                                                                         learning_rate.numpy(),
-                                                                                                         unsupervised_weight,
-                                                                                                         beta_1.numpy()))
+        print("Epoch {:03d}/{:03d}: Train Loss: {:9.7f}, Train Accuracy: {:02.6%}, Validation Loss: {:9.7f}, "
+              "Validation Accuracy: {:02.6%}, lr={:.9f}, unsupervised weight={:5.3f}, beta1={:.9f}".format(epoch+1,
+                                                                                                           epochs,
+                                                                                                           epoch_loss_avg.result(),
+                                                                                                           epoch_accuracy.result(),
+                                                                                                           epoch_loss_avg_val.result(),
+                                                                                                           epoch_accuracy_val.result(),
+                                                                                                           learning_rate.numpy(),
+                                                                                                           unsupervised_weight,
+                                                                                                           beta_1.numpy()))
 
         # If the accuracy of validation improves save a checkpoint Best 85%
         if best_val_accuracy < epoch_accuracy_val.result():
             best_val_accuracy = epoch_accuracy_val.result()
             checkpoint = tfe.Checkpoint(optimizer=optimizer,
                                         model=model,
-                                        optimizer_step=tf.train.get_or_create_global_step())
+                                        optimizer_step=global_step)
             checkpoint.save(file_prefix=checkpoint_directory)
 
+        # Record summaries
+        with tf.contrib.summary.record_summaries_every_n_global_steps(1):
+            tf.contrib.summary.scalar('Train Loss', epoch_loss_avg.result())
+            tf.contrib.summary.scalar(
+                'Train Accuracy', epoch_accuracy.result())
+            tf.contrib.summary.scalar(
+                'Validation Loss', epoch_loss_avg_val.result())
+            tf.contrib.summary.scalar(
+                'Validation Accuracy', epoch_accuracy_val.result())
+            tf.contrib.summary.scalar(
+                'Unsupervised Weight', unsupervised_weight)
+            tf.contrib.summary.scalar('Learning Rate', learning_rate.numpy())
+            tf.contrib.summary.scalar('Ramp Up Function', rampup_value)
+            tf.contrib.summary.scalar('Ramp Down Function', rampdown_value)
+            
+
     print('\nTrain Ended! Best Validation accuracy = {}\n'.format(best_val_accuracy))
-    
+
     # Load the best model
     root = tfe.Checkpoint(optimizer=optimizer,
-                      model=model,
-                      optimizer_step=tf.train.get_or_create_global_step())
+                          model=model,
+                          optimizer_step=tf.train.get_or_create_global_step())
     root.restore(tf.train.latest_checkpoint(checkpoint_directory))
 
     # Evaluate on the final test set
@@ -130,9 +145,8 @@ def main():
         X_test, y_test = test_iterator.get_next()
         y_test_predictions = model(X_test, training=False)
         test_accuracy(tf.argmax(y_test_predictions, 1), tf.argmax(y_test, 1))
-    
-    print("Final Test Accuracy: {:.6%}".format(test_accuracy.result()))
 
+    print("Final Test Accuracy: {:.6%}".format(test_accuracy.result()))
 
 
 if __name__ == "__main__":
