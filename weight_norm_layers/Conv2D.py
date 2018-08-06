@@ -107,6 +107,7 @@ class _Conv(base.Layer):
                  trainable=True,
                  weight_norm=True,
                  mean_only_batch_norm=True,
+                 mean_only_batch_norm_momentum=0.99,
                  name=None,
                  **kwargs):
         super(_Conv, self).__init__(trainable=trainable, name=name,
@@ -132,6 +133,7 @@ class _Conv(base.Layer):
         self.input_spec = base.InputSpec(ndim=self.rank + 2)
         self.weight_norm = weight_norm
         self.mean_only_batch_norm = mean_only_batch_norm
+        self.mean_only_batch_norm_momentum = mean_only_batch_norm_momentum
 
     def build(self, input_shape):
         input_shape = tensor_shape.TensorShape(input_shape)
@@ -204,8 +206,9 @@ class _Conv(base.Layer):
                 if self.batch_norm_running_average == []:
                     self.batch_norm_running_average = mean
                 else:
-                    self.batch_norm_running_average = (
-                        self.batch_norm_running_average+mean)/2
+                    self.batch_norm_running_average = self.batch_norm_running_average * \
+                        self.mean_only_batch_norm_momentum + mean * \
+                        (1-self.mean_only_batch_norm_momentum)
                 outputs = outputs - mean
             else:
                 outputs = outputs - self.batch_norm_running_average
