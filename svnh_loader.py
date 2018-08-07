@@ -148,12 +148,15 @@ class SvnhLoader:
             else:
                 current_label = int(labels[index])
 
+            # Image index is needed to keep track of the temporal ensembling past predictions 
+            # without loosing the shuffle batches
             sample = tf.train.Example(features=tf.train.Features(feature={
                 'height': tf.train.Feature(int64_list=tf.train.Int64List(value=[32])),
                 'width': tf.train.Feature(int64_list=tf.train.Int64List(value=[32])),
                 'depth': tf.train.Feature(int64_list=tf.train.Int64List(value=[3])),
                 'label': tf.train.Feature(int64_list=tf.train.Int64List(value=[current_label])),
-                'image': tf.train.Feature(float_list=tf.train.FloatList(value=image))}))
+                'image': tf.train.Feature(float_list=tf.train.FloatList(value=image)),
+                'image_index': tf.train.Feature(int64_list=tf.train.Int64List(value=[index]))}))
             writer.write(sample.SerializeToString())
         writer.close()
 
@@ -231,18 +234,27 @@ class SvnhLoader:
         self.__generate_tfrecord(test_X, test_y, os.path.join(
             self._dataset_path, 'test_set.tfrecords'))
 
-    def load_dataset(self, batch_size, epochs):
+    def load_dataset(self, batch_size, epochs, fraction_of_labeled_per_batch=1.0,
+                     fraction_of_unlabeled_per_batch=1.0, shuffle=True):
         """ Calls the TfrecordLoader to load the generated 
            tfrecords file.
 
         Arguments:
             batch_size {int} -- desired batch size
             epochs {int} -- number of epochs for train
+            fraction_of_labeled_per_batch {float} -- if 1.0 use full batch_size for labeled set, if not
+                                                     use a batch size of batch_size * fraction_of_labeled_per_batch
+                                                     for labeled set.
+            fraction_of_unlabeled_per_batch {float} -- if 1.0 use full batch_size for unlabeled set, if not
+                                                       use a batch size of batch_size * fraction_of_unlabeled_per_batch
+                                                       for unlabeled set.
+            shuffle {bool} -- shuffle the dataset (set it to false for temporal ensembling)
 
         Returns:
             {tf.data.Iterator} -- iterator for a specific tfrecords file
         """
 
         tfrecord_loader = TfrecordLoader(
-            './data', batch_size, epochs, self._IMAGE_SIZE, self._NUM_CLASSES)
+            './data', batch_size, epochs, self._IMAGE_SIZE, self._NUM_CLASSES,
+            fraction_of_labeled_per_batch, fraction_of_unlabeled_per_batch, shuffle)
         return tfrecord_loader.load_dataset()
