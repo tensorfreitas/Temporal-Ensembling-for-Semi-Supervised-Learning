@@ -6,6 +6,56 @@ import weight_norm_layers.Conv2D
 import weight_norm_layers.Dense
 
 
+def temporal_ensembling_loss(X_train_labeled, y_train_labeled, X_train_unlabeled, model, unsupervised_weight, ensembling_targets):
+    """ Gets the loss for the temporal ensembling model
+
+    Arguments:
+        X_train_labeled {tensor} -- labeled samples
+        y_train_labeled {tensor} -- labeled train labels
+        X_train_unlabeled {tensor} -- unlabeled samples 
+        model {tf.keras.Model} -- temporal ensembling model
+        unsupervised_weight {float} -- weight of the unsupervised loss
+        ensembling_targets {np.array} --  ensembling targets
+
+    Returns:
+        {tensor} -- predictions for the ensembles
+        {tensor} -- loss value
+    """
+
+    z_labeled = model(X_train_labeled)
+    z_unlabeled = model(X_train_unlabeled)
+
+    current_predictions = tf.concat([z_labeled, z_unlabeled], 0)
+
+    return current_predictions, tf.losses.softmax_cross_entropy(
+        y_train_labeled, z_labeled) + unsupervised_weight * (
+            tf.losses.mean_squared_error(current_predictions, ensembling_targets))
+
+
+def temporal_ensembling_gradients(X_train_labeled, y_train_labeled, X_train_unlabeled, model, unsupervised_weight, ensembling_targets):
+    """ Gets the gradients for the temporal ensembling model
+
+    Arguments:
+        X_train_labeled {tensor} -- labeled samples
+        y_train_labeled {tensor} -- labeled train labels
+        X_train_unlabeled {tensor} -- unlabeled samples 
+        model {tf.keras.Model} -- temporal ensembling model
+        unsupervised_weight {float} -- weight of the unsupervised loss
+        ensembling_targets {np.array} --  ensembling targets
+
+    Returns:
+        {tensor} -- predictions for the ensembles
+        {tensor} -- loss value
+        {tensor} -- gradients for each model variables
+    """
+
+    with tf.GradientTape() as tape:
+        ensemble_precitions, loss_value = temporal_ensembling_loss(X_train_labeled, y_train_labeled, X_train_unlabeled,
+                                                                   model, unsupervised_weight, ensembling_targets)
+
+    return ensemble_precitions, loss_value, tape.gradient(loss_value, model.variables)
+
+
 def pi_model_loss(X_train_labeled, y_train_labeled, X_train_unlabeled,
                   pi_model, unsupervised_weight):
     """ Gets the Loss Value for SSL Pi Model
@@ -74,7 +124,7 @@ def ramp_up_function(epoch):
 
 
 def ramp_down_function(epoch, num_epochs):
-    """ Ramps down the value of the learning rate and adam's beta 
+    """ Ramps down the value of the learning rate and adam's beta
         in the last 50 epochs according to the paper
 
     Arguments:
@@ -96,7 +146,7 @@ def ramp_down_function(epoch, num_epochs):
 class PiModel(tf.keras.Model):
     """ Class for defining eager compatible tfrecords file
 
-        I did not use tfe.Network since it will be depracated in the 
+        I did not use tfe.Network since it will be depracated in the
         future by tensorflow.
     """
 
@@ -104,42 +154,52 @@ class PiModel(tf.keras.Model):
         """ Init
 
             Set all the layers that need to be tracked in the process of
-            gradients descent (pooling and dropout for example dont need 
+            gradients descent (pooling and dropout for example dont need
             to be stored)
         """
 
         super(PiModel, self).__init__()
         self._conv1a = weight_norm_layers.Conv2D.Conv2D(filters=128, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.nn.leaky_relu,
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv1b = weight_norm_layers.Conv2D.Conv2D(filters=128, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.nn.leaky_relu,
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv1c = weight_norm_layers.Conv2D.Conv2D(filters=128, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.nn.leaky_relu,
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
+                                                        kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         weight_norm=True, mean_only_batch_norm=True)
 
         self._conv2a = weight_norm_layers.Conv2D.Conv2D(filters=256, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.nn.leaky_relu,
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv2b = weight_norm_layers.Conv2D.Conv2D(filters=256, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.nn.leaky_relu,
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv2c = weight_norm_layers.Conv2D.Conv2D(filters=256, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.nn.leaky_relu,
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         weight_norm=True, mean_only_batch_norm=True)
 
         self._conv3a = weight_norm_layers.Conv2D.Conv2D(filters=512, kernel_size=[3, 3],
-                                                        padding="valid", activation=tf.nn.leaky_relu,
+                                                        padding="valid", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv3b = weight_norm_layers.Conv2D.Conv2D(filters=256, kernel_size=[1, 1],
-                                                        padding="same", activation=tf.nn.leaky_relu,
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
+                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv3c = weight_norm_layers.Conv2D.Conv2D(filters=128, kernel_size=[1, 1],
-                                                        padding="same", activation=tf.nn.leaky_relu,
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         weight_norm=True, mean_only_batch_norm=True)
 
-        self._dense = weight_norm_layers.Dense.Dense(units=10, activation=tf.nn.softmax,
+        self._dense = weight_norm_layers.Dense.Dense(units=10, activation=tf.nn.softmax, 
+                                                     kernel_initializer=tf.keras.initializers.he_uniform(),
                                                      weight_norm=True, mean_only_batch_norm=True)
 
     def __aditive_gaussian_noise(self, input, std):
