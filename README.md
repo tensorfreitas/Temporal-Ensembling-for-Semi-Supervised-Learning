@@ -1,8 +1,8 @@
-# Temporal-Ensembling-for-Semi-Supervised-Learning (UNDER WORK)
+# Temporal-Ensembling-for-Semi-Supervised-Learning
 
 This repository includes a implementation of Temportal Ensembling for Semi-Supervised Learning by Laine et al. with Tensorflow eager execution.
 
-When I was reading "Realistic Evaluation of Deep Semi-Supervised Learning Algorithms" by Avital Oliver (2018), I realized I had never played enough with Semi-Supervised Learning, so I came across this paper and thought it was interesting for me to play with. (I highly recommend reading the paper by Avital et al., one of my favorite recent papers).
+When I was reading "Realistic Evaluation of Deep Semi-Supervised Learning Algorithms" by Avital Oliver (2018), I realized I had never played enough with Semi-Supervised Learning, so I came across this paper and thought it was interesting for me to play with. (I highly recommend reading the paper by Avital et al., one of my favorite recent papers). Additionally eager will be the default execution method when the 2.0 Tensorflow version comes out, so I though I should use it in this repository. 
 
 ## Semi-Supervised Learning
 
@@ -62,11 +62,11 @@ To test the two types of ensembling, the authors used a CNN with the following a
   <img src="https://user-images.githubusercontent.com/10371630/41508999-d80054be-7244-11e8-8191-899331ddde52.png"/>
 </p>
 
-The datasets tested were CIFAR-10, CIFAR-100 and SVNH. I will focus on the latter since currently I only tested on this dataset. 
+The datasets tested were CIFAR-10, CIFAR-100 and SVHN. I will focus on the latter since currently I only tested on this dataset. 
 
-**SVNH Dataset**
+**SVHN Dataset**
 
-The Street View House Numbers (SVNH) dataset includes images with digits and numbers in natural scene images. The authors used the MNIST-like 32x32 images centered around a single character, trying to classify the center digit. It has 73257 digits for training, 26032 digits for testing, and 531131 extra digits (not used currently). 
+The Street View House Numbers (SVHN) dataset includes images with digits and numbers in natural scene images. The authors used the MNIST-like 32x32 images centered around a single character, trying to classify the center digit. It has 73257 digits for training, 26032 digits for testing, and 531131 extra digits (not used currently). 
 
 <p align="center">
   <img src="http://ufldl.stanford.edu/housenumbers/32x32eg.png"/>
@@ -96,23 +96,23 @@ The learning rate in each epoch corresponds to the multiplication of this tempor
 
 The training hyperparameters described in the paper are different in both algorithms and for the different datasets:
 - Weight and mean only batch normalization with momentum of 0.999 was used in all layers.
-- The max learning rate was defined as 0.003 except for temporal ensembling in SVNH dataset, where this parameter was set to 0.001.
-- the value for ![w_max] also varied: in pi-model it was set for 100 for SVNH and CIFAR-10 and 300 for CIFAR-100, while for temporal ensembling it was set to 30. 
+- The max learning rate was defined as 0.003 except for temporal ensembling in SVHN dataset, where this parameter was set to 0.001.
+- the value for ![w_max] also varied: in pi-model it was set for 100 for SVHN and CIFAR-10 and 300 for CIFAR-100, while for temporal ensembling it was set to 30. 
 - The training was done for 300 epochs with batch size of 100.
-- Data augmentation included random flips (except in SVNH) and random translations with a max translation of +/- 2 pixels. 
-- In CIFAR datasets ZCA normalization was used and in SVNH zero mean and unit variance normalization was used. 
-- Adam was used and in SVNH the ![beta2] was set to 0.99 instead of 0.999, since it seemed to avoid gradient explosion. 
+- Data augmentation included random flips (except in SVHN) and random translations with a max translation of +/- 2 pixels. 
+- In CIFAR datasets ZCA normalization was used and in SVHN zero mean and unit variance normalization was used. 
+- Adam was used and in SVHN the ![beta2] was set to 0.99 instead of 0.999, since it seemed to avoid gradient explosion. 
 
 There are some differences in this repository regarding the paper:
-- The authors claim to completely randomize the batches, which means that can be consecutive batches without labeled inputs. In this implementation I set the number of labeled and unlabeled samples to be equal (50+50). 
-- The authors tested in CIFAR-10 and CIFAR-100 and with extra support unlabeled dataset for SVNH and CIFAR. Currently the implementation only includes SVNH training.
+- The authors claim to completely randomize the batches, which means that can be consecutive batches without labeled inputs. The authors said that structured batches can be used to improve the results so I tried to force a fixed fraction of labeled and unlabeled samples per batch.
+- The authors tested in CIFAR-10 and CIFAR-100 and with extra support unlabeled dataset for SVHN and CIFAR. Currently the implementation only includes SVHN training.
 - Training using with label corruption was tested in the paper, which is not tested in this repository.
 - No information is given in the paper on the validation set. In the implementation by default 1000 samples (100 per class) are used as labeled samples, 200 (20 per class) are used for validation. This is way more close to real-world scenarios and was done also in Avital et al. paper "Realistic Evaluation of Deep Semi-Supervised Learning Algorithms." The remaining training set samples are used as unlabeled samples.
 - A full epoch is considered when all labeled samples are passed by the network (this means that in one epoch not all unlabeled samples are passed in the network). 
 
 **Code Details** 
 
-_train_pi_model.py_ includes the main function for training the ![Pi]-Model on SVNH dataset. You can edit some variables described before in the beginning of the main function. The default parameters are the described in the paper:
+_train_pi_model.py_ includes the main function for training the ![Pi]-Model on SVHN dataset. You can edit some variables described before in the beginning of the main function. The default parameters are the described in the paper:
 
 ```python
 # Editable variables
@@ -126,15 +126,48 @@ final_beta1 = 0.5
 checkpoint_directory = './checkpoints/PiModel'
 tensorboard_logs_directory = './logs/PiModel'
 ```
+
+Similarly, _train_temporal_ensembling_model.py_ includes the main function for training the temporal ensembling model on SVHN:
+```python
+# Editable variables
+num_labeled_samples = 3000
+num_validation_samples = 1000
+num_train_unlabeled_samples = NUM_TRAIN_SAMPLES - num_labeled_samples - num_validation_samples
+batch_size = 150
+epochs = 600
+max_learning_rate = 0.0002 # 0.001 as recomended in the paper leads to unstable training. 
+initial_beta1 = 0.9
+final_beta1 = 0.5
+alpha = 0.6
+max_unsupervised_weight = 30 * num_labeled_samples / (NUM_TRAIN_SAMPLES - num_validation_samples)
+checkpoint_directory = './checkpoints/TemporalEnsemblingModel'
+tensorboard_logs_directory = './logs/TemporalEnsemblingModel'
+```
+
 _svnh_loader.py_ and _tfrecord_loader.py_ have helper classes for downloading the dataset and save them in tfrecords in order to be loaded as _tf.data.TFRecordDataset_. 
 
 _pi_model.py_ is where the model is defined as _tf.keras.Model_ and where some training functions are defined like rampup and rampdown functions, the loss and gradients functions. 
 
 In the folder _weight_norm_layers_ there are some edited tensorflow.layers wrappers for allowing weight normalization and mean-only batch normalization in _Conv2D_ and _Dense_ layers as used in the paper.
 
-The code also saves tensorboard logs, plotting loss curves, mean accuracies and the evolution of the unsupervised learning weight and learning rates.
+The code also saves tensorboard logs, plotting loss curves, mean accuracies and the evolution of the unsupervised learning weight and learning rates. In the case of the temporal ensembling the histograms of the temporal ensembling predictions and the normalized training targets are also saved in tensorboard. 
 
-Note: The Code for temporal ensembling training is still not in the repo, but I will add it in the next few days. 
+***Important Notes***
+- The authors claimed "in SVHN we noticed that optimization tended to explode during the ramp-up period" and I also noticed this. With the incorrect hyperparameters it is possible to lead to non-convergence, especially when you try high maximum learning rates. Most of the times reducing the learning rate solves this problem. In temporal ensembling the learning rate suggested by the author led to this non-convergence (but notice that here batch stratification occurs) so I needed to decrease it. I also noticed that reducing a little bit the ![beta2] value to 0.998 helped in temporal ensembling. This leads me to conclude that the structured batches don't solve the convergence of the algorithms as reported in the paper.
+- If you change the parameters of _num_labeled_samples_ and _num_validation_samples_ you need to remove the tfrecords in data folder (otherwise you will reuse the older dataset). 
+- In the case of temporal ensembling I started to implement without random shuffling to keep track of the temporal ensemble predictions: this made the training process to non-convergence. This was solved by keep tracking of the indexes of the samples in the dataset iterator: 
+```python
+X_labeled_train, y_labeled_train, labeled_indexes = train_labeled_iterator.get_next()
+X_unlabeled_train, _, unlabeled_indexes = train_unlabeled_iterator.get_next()
+```
+this is only relevant to the temporal ensembling case. 
+- You can change the epoch number with max ramp-up value changing the second argument of the _ramp_up_function_
+```python
+rampup_value = ramp_up_function(epoch, 40)
+```
+- The results are not exactly the ones reported in the paper with 1000 labels, but I have to admit that I do not have the hardware to find the best parameters with structured batches (the experiments were run in a 860M NVIDIA card). 
+
+If you find any bug feel free to send me an email or create an issue in the repository!
 
 ## References
 - Laine, Samuli, and Timo Aila. "Temporal ensembling for semi-supervised learning." arXiv preprint arXiv:1610.02242 (2016).
