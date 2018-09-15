@@ -26,7 +26,7 @@ def main():
     num_train_unlabeled_samples = NUM_TRAIN_SAMPLES - \
         num_labeled_samples - num_validation_samples
     batch_size = 150
-    epochs = 600
+    epochs = 300
     max_learning_rate = 0.0002 # 0.001 as recomended in the paper leads to unstable training. 
     initial_beta1 = 0.9
     final_beta1 = 0.5
