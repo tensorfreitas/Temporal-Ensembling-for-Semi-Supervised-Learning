@@ -21,13 +21,13 @@ def main():
     NUM_TEST_SAMPLES = 26032
 
     # Editable variables
-    num_labeled_samples = 1000
-    num_validation_samples = 200
+    num_labeled_samples = 3000
+    num_validation_samples = 1000
     num_train_unlabeled_samples = NUM_TRAIN_SAMPLES - \
         num_labeled_samples - num_validation_samples
     batch_size = 150
     epochs = 600
-    max_learning_rate = 0.001/10
+    max_learning_rate = 0.0002
     initial_beta1 = 0.9
     final_beta1 = 0.5
     alpha = 0.6
@@ -45,10 +45,10 @@ def main():
                         num_validation_samples, num_labeled_samples)
     loader.download_images_and_generate_tf_record()
 
-    # You can replace it by the real ratio (preferably with a big batch size : num_labeled_samples / num_train_unlabeled_sample
+    # You can replace it by the real ratio (preferably with a big batch size : num_labeled_samples / num_train_unlabeled_samples
     # This means that the labeled batch size will be labeled_batch_fraction * batch_size and the unlabeled batch size will be
     # (1-labeled_batch_fraction) * batch_size
-    labeled_batch_fraction = 0.5
+    labeled_batch_fraction = num_labeled_samples / num_train_unlabeled_samples
     batches_per_epoch = round(
         num_labeled_samples/(batch_size * labeled_batch_fraction))
 
@@ -59,8 +59,10 @@ def main():
     batches_per_epoch_val = int(round(num_validation_samples / batch_size))
 
     model = PiModel()
+    # Paper has beta2=0.990 but I experimented decreasing it a little bit (as recomended in the paper) and it led
+    # to more stable training
     optimizer = tf.train.AdamOptimizer(
-        learning_rate=learning_rate, beta1=beta_1, beta2=0.990)
+        learning_rate=learning_rate, beta1=beta_1, beta2=0.980) 
 
     best_val_accuracy = 0
     global_step = tf.train.get_or_create_global_step()
@@ -77,7 +79,7 @@ def main():
 
     for epoch in range(epochs):
         rampdown_value = ramp_down_function(epoch, epochs)
-        rampup_value = ramp_up_function(epoch)
+        rampup_value = ramp_up_function(epoch, 40)
 
         if epoch == 0:
             unsupervised_weight = 0

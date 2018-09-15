@@ -104,7 +104,7 @@ def pi_model_gradients(X_train_labeled, y_train_labeled, X_train_unlabeled,
     return loss_value, tape.gradient(loss_value, pi_model.variables)
 
 
-def ramp_up_function(epoch):
+def ramp_up_function(epoch, epoch_with_max_rampup=80):
     """ Ramps the value of the weight and learning rate according to the epoch
         according to the paper
 
@@ -114,7 +114,7 @@ def ramp_up_function(epoch):
     Returns:
         {float} -- rampup value
     """
-    epoch_with_max_rampup = 80
+    epoch_with_max_rampup = 40
     if epoch < epoch_with_max_rampup:
         p = max(0.0, float(epoch)) / float(epoch_with_max_rampup)
         p = 1.0 - p
