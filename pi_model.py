@@ -110,11 +110,12 @@ def ramp_up_function(epoch, epoch_with_max_rampup=80):
 
     Arguments:
         {int} epoch
+        {int} epoch where the rampup function gets its maximum value
 
     Returns:
         {float} -- rampup value
     """
-    epoch_with_max_rampup = 40
+    
     if epoch < epoch_with_max_rampup:
         p = max(0.0, float(epoch)) / float(epoch_with_max_rampup)
         p = 1.0 - p

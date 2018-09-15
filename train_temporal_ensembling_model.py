@@ -27,7 +27,7 @@ def main():
         num_labeled_samples - num_validation_samples
     batch_size = 150
     epochs = 600
-    max_learning_rate = 0.0002
+    max_learning_rate = 0.0002 # 0.001 as recomended in the paper leads to unstable training. 
     initial_beta1 = 0.9
     final_beta1 = 0.5
     alpha = 0.6
@@ -79,6 +79,7 @@ def main():
 
     for epoch in range(epochs):
         rampdown_value = ramp_down_function(epoch, epochs)
+        # In the paper the authors use 80 as the epoch with max rampup_value
         rampup_value = ramp_up_function(epoch, 40)
 
         if epoch == 0:
