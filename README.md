@@ -165,9 +165,10 @@ this is only relevant to the temporal ensembling case.
 ```python
 rampup_value = ramp_up_function(epoch, 40)
 ```
+- Be careful with the batch size. If you maintain the ratio of labeled/unlabeled samples in the batch, a low batch size can lead to non-convergence. Bigger batch sizes or bigger number of labeled samples used lead to a bigger number of labeled samples in each batch, that make the train more stable. 
 - The results are not exactly the ones reported in the paper with 1000 labels, but I have to admit that I do not have the hardware to find the best parameters with structured batches (the experiments were run in a 860M NVIDIA card). 
 
-If you find any bug feel free to send me an email or create an issue in the repository!
+If you find any bug or have a suggestion feel free to send me an email or create an issue in the repository!
 
 ## References
 - Laine, Samuli, and Timo Aila. "Temporal ensembling for semi-supervised learning." arXiv preprint arXiv:1610.02242 (2016).
