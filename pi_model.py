@@ -175,6 +175,8 @@ class PiModel(tf.keras.Model):
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         bias_initializer=tf.keras.initializers.constant(0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
+        self._pool1 = tf.keras.layers.MaxPool2D(pool_size=2, strides=2, padding="same")
+        self._dropout1 = tf.keras.layers.Dropout(0.5)
 
         self._conv2a = weight_norm_layers.Conv2D.Conv2D(filters=256, kernel_size=[3, 3],
                                                         padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
@@ -191,6 +193,8 @@ class PiModel(tf.keras.Model):
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
                                                         bias_initializer=tf.keras.initializers.constant(0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
+        self._pool2 = tf.keras.layers.MaxPool2D(pool_size=2, strides=2, padding="same")
+        self._dropout2 = tf.keras.layers.Dropout(0.5)
 
         self._conv3a = weight_norm_layers.Conv2D.Conv2D(filters=512, kernel_size=[3, 3],
                                                         padding="valid", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
@@ -241,7 +245,7 @@ class PiModel(tf.keras.Model):
         random_translation = tf.random_uniform(
             [1, 2], minval=-2.0, maxval=2.0, dtype=tf.float32)
         image = tf.contrib.image.translate(
-            image, random_translation, 'NEAREST')
+            image, random_translation.numpy, 'NEAREST')
         return image
 
     def call(self, input, training=True):
@@ -264,16 +268,14 @@ class PiModel(tf.keras.Model):
         h = self._conv1a(h, training)
         h = self._conv1b(h, training)
         h = self._conv1c(h, training)
-        h = tf.layers.max_pooling2d(
-            inputs=h,  pool_size=[2, 2], strides=[2, 2])
-        h = tf.layers.dropout(inputs=h, rate=0.5, training=training)
-
+        h = self._pool1(h)
+        h = self._dropout1(h, training=training)
+    
         h = self._conv2a(h, training)
         h = self._conv2b(h, training)
         h = self._conv2c(h, training)
-        h = tf.layers.max_pooling2d(
-            inputs=h,  pool_size=[2, 2], strides=[2, 2])
-        h = tf.layers.dropout(inputs=h, rate=0.5, training=training)
+        h = self._pool2(h)
+        h = self._dropout2(h, training=training)
 
         h = self._conv3a(h, training)
         h = self._conv3b(h, training)
