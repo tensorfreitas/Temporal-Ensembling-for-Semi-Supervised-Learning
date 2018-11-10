@@ -1,4 +1,5 @@
 import math
+import numpy as np 
 import tensorflow as tf
 
 # Edited files with weight normalization and mean only batch normalization
@@ -115,7 +116,7 @@ def ramp_up_function(epoch, epoch_with_max_rampup=80):
     Returns:
         {float} -- rampup value
     """
-    
+
     if epoch < epoch_with_max_rampup:
         p = max(0.0, float(epoch)) / float(epoch_with_max_rampup)
         p = 1.0 - p
@@ -161,60 +162,72 @@ class PiModel(tf.keras.Model):
 
         super(PiModel, self).__init__()
         self._conv1a = weight_norm_layers.Conv2D.Conv2D(filters=128, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
-                                                        bias_initializer=tf.keras.initializers.constant(0.1),
+                                                        bias_initializer=tf.keras.initializers.constant(
+                                                            0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv1b = weight_norm_layers.Conv2D.Conv2D(filters=128, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
-                                                        bias_initializer=tf.keras.initializers.constant(0.1),
+                                                        bias_initializer=tf.keras.initializers.constant(
+                                                            0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv1c = weight_norm_layers.Conv2D.Conv2D(filters=128, kernel_size=[3, 3],
                                                         padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
-                                                        bias_initializer=tf.keras.initializers.constant(0.1),
+                                                        bias_initializer=tf.keras.initializers.constant(
+                                                            0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
-        self._pool1 = tf.keras.layers.MaxPool2D(pool_size=2, strides=2, padding="same")
+        self._pool1 = tf.keras.layers.MaxPool2D(
+            pool_size=2, strides=2, padding="same")
         self._dropout1 = tf.keras.layers.Dropout(0.5)
 
         self._conv2a = weight_norm_layers.Conv2D.Conv2D(filters=256, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
-                                                        bias_initializer=tf.keras.initializers.constant(0.1),
+                                                        bias_initializer=tf.keras.initializers.constant(
+                                                            0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv2b = weight_norm_layers.Conv2D.Conv2D(filters=256, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
-                                                        bias_initializer=tf.keras.initializers.constant(0.1),
+                                                        bias_initializer=tf.keras.initializers.constant(
+                                                            0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv2c = weight_norm_layers.Conv2D.Conv2D(filters=256, kernel_size=[3, 3],
-                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
-                                                        bias_initializer=tf.keras.initializers.constant(0.1),
+                                                        bias_initializer=tf.keras.initializers.constant(
+                                                            0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
-        self._pool2 = tf.keras.layers.MaxPool2D(pool_size=2, strides=2, padding="same")
+        self._pool2 = tf.keras.layers.MaxPool2D(
+            pool_size=2, strides=2, padding="same")
         self._dropout2 = tf.keras.layers.Dropout(0.5)
 
         self._conv3a = weight_norm_layers.Conv2D.Conv2D(filters=512, kernel_size=[3, 3],
-                                                        padding="valid", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        padding="valid", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
-                                                        bias_initializer=tf.keras.initializers.constant(0.1),
+                                                        bias_initializer=tf.keras.initializers.constant(
+                                                            0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv3b = weight_norm_layers.Conv2D.Conv2D(filters=256, kernel_size=[1, 1],
                                                         padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
-                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
-                                                         bias_initializer=tf.keras.initializers.constant(0.1),
+                                                        kernel_initializer=tf.keras.initializers.he_uniform(),
+                                                        bias_initializer=tf.keras.initializers.constant(
+                                                            0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
         self._conv3c = weight_norm_layers.Conv2D.Conv2D(filters=128, kernel_size=[1, 1],
-                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1), 
+                                                        padding="same", activation=tf.keras.layers.LeakyReLU(alpha=0.1),
                                                         kernel_initializer=tf.keras.initializers.he_uniform(),
-                                                        bias_initializer=tf.keras.initializers.constant(0.1),
+                                                        bias_initializer=tf.keras.initializers.constant(
+                                                            0.1),
                                                         weight_norm=True, mean_only_batch_norm=True)
 
-        self._dense = weight_norm_layers.Dense.Dense(units=10, activation=tf.nn.softmax, 
+        self._dense = weight_norm_layers.Dense.Dense(units=10, activation=tf.nn.softmax,
                                                      kernel_initializer=tf.keras.initializers.he_uniform(),
-                                                     bias_initializer=tf.keras.initializers.constant(0.1),
+                                                     bias_initializer=tf.keras.initializers.constant(
+                                                         0.1),
                                                      weight_norm=True, mean_only_batch_norm=True)
 
     def __aditive_gaussian_noise(self, input, std):
@@ -242,10 +255,11 @@ class PiModel(tf.keras.Model):
             {tensor} -- transformed image
         """
 
-        random_translation = tf.random_uniform(
-            [1, 2], minval=-2.0, maxval=2.0, dtype=tf.float32)
-        image = tf.contrib.image.translate(
-            image, random_translation.numpy, 'NEAREST')
+        random_shifts = np.random.randint(-2, 2, image.numpy().shape[0])
+        random_transformations = tf.contrib.image.translations_to_projective_transforms(
+            random_shifts)
+        image = tf.contrib.image.transform(image, random_transformations, 'NEAREST',
+                                           output_shape=tf.convert_to_tensor(image.numpy().shape[1:3], dtype=np.int32))
         return image
 
     def call(self, input, training=True):
@@ -270,7 +284,7 @@ class PiModel(tf.keras.Model):
         h = self._conv1c(h, training)
         h = self._pool1(h)
         h = self._dropout1(h, training=training)
-    
+
         h = self._conv2a(h, training)
         h = self._conv2b(h, training)
         h = self._conv2c(h, training)
