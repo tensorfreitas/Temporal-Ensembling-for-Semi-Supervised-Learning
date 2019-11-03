@@ -60,12 +60,12 @@ class SvnhLoader:
         # Convert data to numpy array
         X = mat_dataset['X'].astype(np.float64)
 
+        # Original dataset comes with wrong order in the dimensions
+        X = X.transpose((3, 0, 1, 2))
+
         # Convert it to zero mean and unit variance
         X -= np.mean(X, axis=(1, 2, 3), keepdims=True)
         X /= (np.mean(X ** 2, axis=(1, 2, 3), keepdims=True) ** 0.5)
-
-        # Original dataset comes with wrong order in the dimensions
-        X = X.transpose((3, 0, 1, 2))
 
         X = X.reshape([X.shape[0], -1])
         y = mat_dataset['y'].flatten().astype(np.int32)

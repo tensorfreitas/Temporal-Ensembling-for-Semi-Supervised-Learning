@@ -246,7 +246,8 @@ class PiModel(tf.keras.Model):
         return input + noise
 
     def __apply_image_augmentation(self, image):
-        """ Applies random transformation to the image
+        """ Applies random transformation to the image (shift image withina range of 
+            [-2, 2] pixels)
 
         Arguments:
             image {tensor} -- image
@@ -255,7 +256,7 @@ class PiModel(tf.keras.Model):
             {tensor} -- transformed image
         """
 
-        random_shifts = np.random.randint(-2, 2, image.numpy().shape[0])
+        random_shifts = np.random.randint(-2, 2, (image.numpy().shape[0], 2))
         random_transformations = tf.contrib.image.translations_to_projective_transforms(
             random_shifts)
         image = tf.contrib.image.transform(image, random_transformations, 'NEAREST',
